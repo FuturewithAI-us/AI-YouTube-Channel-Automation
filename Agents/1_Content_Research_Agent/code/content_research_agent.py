@@ -1,55 +1,79 @@
 """
-Content Research Agent - Retrieves Google Trends data for a specific topic and saves the results to a file.
+Content Research Agent – Retrieves Google Trends data for a specific topic and saves the results to a file.
 """
 
 import time  # Standard library import should be placed first
 from pytrends.request import TrendReq  # Third-party library import
 
-TOPIC = "Your Topic Here"  # Example of an appropriately named constant
 
-
-def fetch_trends_data(topic):
+def fetch_trending_topics(topic):
     """
-    Fetches Google Trends data for a given topic.
-    
+    Fetch trending topics for India from Google Trends for a specified topic.
+
     Args:
-        topic (str): The topic to search trends for.
+        topic (str): The search topic to retrieve trending data for.
 
     Returns:
-        dict: The retrieved trends data.
+        dict: A dictionary containing the trending data.
     """
+    pytrends = TrendReq(hl='en-US', tz=330)
+
     try:
-        pytrends = TrendReq(hl='en-US', tz=360)
-        kw_list = [topic]
-        pytrends.build_payload(kw_list, cat=0, timeframe='now 1-d', geo='', gprop='')
+        with open('proxies.txt', 'r', encoding='utf-8') as file:  # Specify encoding
+            proxies = [line.strip() for line in file]
+    except FileNotFoundError:
+        print("proxies.txt not found, trying direct connection")
+        proxies = [None]
 
-        data = pytrends.interest_over_time()
-        return data
+    for proxy in proxies:
+        if proxy:
+            pytrends.PROXIES = {'http': proxy, 'https': proxy}
 
-    except Exception as e:
-        print(f"An error occurred while fetching data: {e}")
-        return None
+        try:
+            pytrends.build_payload([topic], cat=0, timeframe='now 1-d', geo='IN', gprop='')
+            trends_data = pytrends.interest_over_time().to_dict()
+
+            if trends_data:
+                return trends_data
+
+        except Exception as e:  # Broad exception caught, but necessary to handle proxy issues
+            print(f"Error with proxy {proxy}: {e}")
+
+    print("No trending data found or unable to connect.")
+    return {}
 
 
-def save_trends_data(data, filename):
+def save_trending_data(topic, data):
     """
-    Saves the trends data to a file.
+    Save the trending data to a text file.
 
     Args:
-        data (dict): The data to be saved.
-        filename (str): The name of the file to save the data to.
+        topic (str): The search topic.
+        data (dict): The trending data to save.
     """
+    filename = f'{topic}_trending_data.txt'
+
     try:
-        with open(filename, "w", encoding="utf-8") as file:  # Specify encoding
-            file.write(data.to_csv())
+        with open(filename, 'w', encoding='utf-8') as file:  # Specify encoding
+            for date, trend_value in data.items():
+                file.write(f'{date}: {trend_value}\n')
+        print(f"Trending data for '{topic}' saved successfully to {filename}.")
     except Exception as e:
-        print(f"An error occurred while saving data: {e}")
+        print(f"Error saving data to {filename}: {e}")
+
+
+def main():
+    """
+    Main function to prompt user for a topic and save trending data.
+    """
+    topic = input("Enter the topic you want to fetch trending data for: ")
+    trends_data = fetch_trending_topics(topic)
+
+    if trends_data:
+        save_trending_data(topic, trends_data)
+    else:
+        print("No data to save.")
 
 
 if __name__ == "__main__":
-    trends_data = fetch_trends_data(TOPIC)
-    if trends_data is not None:
-        save_trends_data(trends_data, "trends_data.csv")
-    else:
-        print("Failed to retrieve trends data.")
-
+    main()
