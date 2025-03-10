@@ -57,16 +57,16 @@ class GoogleTrendsFetcher:
                     return data_dict
                 logging.warning('No data retrieved for topic: %s', topic)
                 return {}
-            except RequestException as e:
-                logging.error(
-                    'Request failed: %s. Attempt %d of %d.',
-                    str(e),
-                    attempt + 1,
-                    retries
-                )
+            except RequestException as error:
+            logging.error(
+            'Request failed: %s. Attempt %d of %d.',
+        str(error),
+        attempt + 1,
+        retries
+        )
                 await asyncio.sleep(2 ** attempt)
-            except jsonschema.ValidationError as e:
-                logging.error('Data validation failed: %s', str(e))
+           except jsonschema.ValidationError as validation_error:
+    logging.error('Data validation failed: %s', str(validation_error))
                 return {}
         logging.error(
             'Failed to retrieve data for topic %s after %d attempts.',
@@ -83,8 +83,8 @@ class GoogleTrendsFetcher:
             with open(file_name, 'w', encoding='utf-8') as file:
                 json.dump(data, file, ensure_ascii=False, indent=4)
             logging.info('Data saved successfully to %s', file_name)
-        except OSError as e:
-            logging.error('Failed to save data to %s: %s', file_name, str(e))
+        except OSError as file_error:
+    logging.error('Failed to save data to %s: %s', file_name, str(file_error))
 
     async def fetch_and_save(self, topic_name: str) -> None:
         """Orchestrates data fetching and saving process for a topic."""
