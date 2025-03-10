@@ -1,5 +1,3 @@
 pytrends
 pandas
-python-dotenv
 jsonschema
-aiohttp
