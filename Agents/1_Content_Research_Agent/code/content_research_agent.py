@@ -57,9 +57,9 @@ class GoogleTrendsFetcher:
                     return data_dict
                 logging.warning('No data retrieved for topic: %s', topic)
                 return {}
-            except RequestException as error:
-            logging.error(
-            'Request failed: %s. Attempt %d of %d.',
+        except RequestException as error:
+        logging.error(
+        'Request failed: %s. Attempt %d of %d.',
         str(error),
         attempt + 1,
         retries
