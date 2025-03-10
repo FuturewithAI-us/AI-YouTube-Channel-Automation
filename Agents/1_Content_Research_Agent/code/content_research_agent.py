@@ -1,29 +1,55 @@
-from pytrends.request import TrendReq
-import time
+"""
+Content Research Agent - Retrieves Google Trends data for a specific topic and saves the results to a file.
+"""
 
-# Read proxies
-try:
-    with open('proxies.txt', 'r') as file:
-        proxies = [line.strip() for line in file]
-except FileNotFoundError:
-    print("proxies.txt not found, trying direct connection")
-    proxies = [None]
+import time  # Standard library import should be placed first
+from pytrends.request import TrendReq  # Third-party library import
 
-# Fetch trending topics for India
-for proxy in proxies:
+TOPIC = "Your Topic Here"  # Example of an appropriately named constant
+
+
+def fetch_trends_data(topic):
+    """
+    Fetches Google Trends data for a given topic.
+    
+    Args:
+        topic (str): The topic to search trends for.
+
+    Returns:
+        dict: The retrieved trends data.
+    """
     try:
-        pytrends = TrendReq(hl='en-IN', tz=330, timeout=(15,30), proxies=[proxy] if proxy else None, retries=3, backoff_factor=0.5)
-        topics = pytrends.trending_searches(pn='india')
-        topic = topics[0][0]
-        print(f"Found trending topic: {topic}")
-        break
-    except Exception as e:
-        print(f"Proxy {proxy if proxy else 'Direct'} failed: {e}")
-        time.sleep(2)
-else:
-    topic = "Understanding Artificial Intelligence in India"
-    print("All attempts failed, using default topic:", topic)
+        pytrends = TrendReq(hl='en-US', tz=360)
+        kw_list = [topic]
+        pytrends.build_payload(kw_list, cat=0, timeframe='now 1-d', geo='', gprop='')
 
-# Save topic
-with open('trending_topics.txt', 'w') as file:
-    file.write(topic)
+        data = pytrends.interest_over_time()
+        return data
+
+    except Exception as e:
+        print(f"An error occurred while fetching data: {e}")
+        return None
+
+
+def save_trends_data(data, filename):
+    """
+    Saves the trends data to a file.
+
+    Args:
+        data (dict): The data to be saved.
+        filename (str): The name of the file to save the data to.
+    """
+    try:
+        with open(filename, "w", encoding="utf-8") as file:  # Specify encoding
+            file.write(data.to_csv())
+    except Exception as e:
+        print(f"An error occurred while saving data: {e}")
+
+
+if __name__ == "__main__":
+    trends_data = fetch_trends_data(TOPIC)
+    if trends_data is not None:
+        save_trends_data(trends_data, "trends_data.csv")
+    else:
+        print("Failed to retrieve trends data.")
+
