@@ -1,69 +1,93 @@
-"""
-Content Research Agent – Retrieves Google Trends data for a specific topic and saves the results to a file.
-"""
-
 import os
+import time
+import logging
+import json
 from pytrends.request import TrendReq
-
-# Read proxies from proxies.txt if available
-
-def read_proxies():
-    try:
-        with open('proxies.txt', 'r', encoding='utf-8') as file:  # Explicitly specifying encoding
-            return [line.strip() for line in file]
-    except FileNotFoundError:
-        print("proxies.txt not found, trying direct connection")
-        return [None]
+from dotenv import load_dotenv
+from typing import List, Dict, Any, Optional
+from requests.exceptions import RequestException
+import jsonschema
+from jsonschema import validate
+import asyncio
+from aiohttp import ClientSession
 
 
-# Fetch trending topics for India
+class GoogleTrendsFetcher:
+    """
+    GoogleTrendsFetcher - Retrieves Google Trends data for a specific topic and saves the results to a file.
+    """
 
-def fetch_trending_topics():
-    pytrends = TrendReq()
+    SCHEMA = {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "date": {"type": "string"},
+                "value": {"type": "integer"}
+            },
+            "required": ["date", "value"]
+        }
+    }
 
-    try:
-        trending_searches_df = pytrends.trending_searches(pn='india')
-        return trending_searches_df[0].tolist()
-    except Exception as e:  # Catching general exceptions replaced with specific error handling
-        print(f"Failed to fetch trending topics: {str(e)}")
-        return []
+    def __init__(self, proxies: Optional[List[str]] = None):
+        load_dotenv()
+        self.pytrends = TrendReq(hl='en-US', tz=360)
+        self.proxies = proxies
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+    async def fetch_data(self, topic: str) -> Dict[str, Any]:
+        """
+        Fetches interest over time data for a given topic.
+        """
+        self.pytrends.build_payload([topic], cat=0, timeframe='now 1-d', geo='IN', gprop='')
+        retries = 3
+        for attempt in range(retries):
+            try:
+                data = self.pytrends.interest_over_time()
+                if not data.empty:
+                    data_dict = data.reset_index().to_dict(orient='records')
+                    validate(instance=data_dict, schema=self.SCHEMA)
+                    return data_dict
+                else:
+                    logging.warning('No data retrieved for the topic: %s', topic)
+                    return {}
+            except RequestException as e:
+                logging.error('Request failed: %s. Attempt %d of %d.', str(e), attempt + 1, retries)
+                await asyncio.sleep(2 ** attempt)  # Exponential backoff
+            except jsonschema.ValidationError as e:
+                logging.error('Data validation failed: %s', str(e))
+                return {}
 
-# Fetch Google Trends data for a given topic
+        logging.error('Failed to retrieve data after %d attempts.', retries)
+        return {}
 
-def fetch_trends_data(topic):
-    pytrends = TrendReq()
-    kw_list = [topic]
-
-    try:
-        pytrends.build_payload(kw_list, timeframe='now 1-d', geo='IN')
-        data = pytrends.interest_over_time()
-        return data
-    except Exception as e:  # Catching general exceptions replaced with specific error handling
-        print(f"Failed to fetch trends data for {topic}: {str(e)}")
-        return None
-
-
-# Save data to a file
-
-def save_data(topic, data):
-    if data is not None and not data.empty:
+    def save_to_file(self, topic: str, data: Dict[str, Any]) -> None:
+        """
+        Saves the fetched data to a file.
+        """
+        file_name = f'{topic}_trends.json'
         try:
-            os.makedirs('output', exist_ok=True)  # Ensure the output directory exists
-            file_path = os.path.join('output', f'{topic}_trends.csv')
-            data.to_csv(file_path)
-            print(f"Data saved to {file_path}")
-        except Exception as e:  # Catching general exceptions replaced with specific error handling
-            print(f"Error saving data for {topic}: {str(e)}")
-    else:
-        print(f"No data to save for {topic}.")
+            with open(file_name, 'w', encoding='utf-8') as file:
+                json.dump(data, file, ensure_ascii=False, indent=4)
+            logging.info('Data saved successfully to %s', file_name)
+        except Exception as e:
+            logging.error('Failed to save data: %s', str(e))
+
+    async def fetch_and_save(self, topic: str) -> None:
+        """
+        Fetches and saves Google Trends data for a given topic asynchronously.
+        """
+        data = await self.fetch_data(topic)
+        if data:
+            self.save_to_file(topic, data)
 
 
-if __name__ == "__main__":
-    proxies = read_proxies()
-    topics = fetch_trending_topics()
+async def main(topics: List[str]) -> None:
+    fetcher = GoogleTrendsFetcher()
+    tasks = [fetcher.fetch_and_save(topic) for topic in topics]
+    await asyncio.gather(*tasks)
 
-    for topic in topics:
-        print(f"Fetching data for topic: {topic}")
-        data = fetch_trends_data(topic)
-        save_data(topic, data)
+
+if __name__ == '__main__':
+    topics = ['Python Programming', 'Machine Learning', 'Artificial Intelligence']
+    asyncio.run(main(topics))
