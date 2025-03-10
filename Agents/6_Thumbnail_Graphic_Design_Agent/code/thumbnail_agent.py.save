@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+import os
+from PIL import Image, ImageDraw, ImageFont
+
+def create_thumbnail():
+    # Create a simple image with a solid background (black)
+    img = Image.new('RGB', (1280, 720), color=(0, 0, 0))
+    d = ImageDraw.Draw(img)
+    
+    # Define the text for the thumbnail
+    text = "Thumbnail for Breaking News on Asap Rocky"
+    text_color = (255, 255, 255)
+    
+    # Get image dimensions
+    width, height = img.size
+    
+    # Calculate text size and position (using default font)
+    text_width, text_height = d.textsize(text)
+    position = ((width - text_width) / 2, (height - text_height) / 2)
+    
+    # Draw the text on the image
+    d.text(position, text, fill=text_color)
+    
+    # Save the image
+    output_file = os.path.join(
+        os.path.expanduser("~"),
+        
+"Documents/youtube/Agents/6_Thumbnail_Graphic_Design_Agent/code/thumbnail.jpg"
+    )
+    img.save(output_file)
+    print("Thumbnail created and saved to", output_file)
+
+if __name__ == '__main__':
+    create_thumbnail()
+
