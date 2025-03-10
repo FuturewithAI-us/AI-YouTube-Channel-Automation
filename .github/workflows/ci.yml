@@ -27,10 +27,8 @@ jobs:
 
       - name: Run Linting
         run: |
-          # Lint each agent script; adjust paths as needed.
           pylint Agents/1_Content_Research_Agent/code/content_research_agent.py
 
       - name: Run Tests
         run: |
-          # Run your tests if you have them; if not, you can run your script as a test.
           pytest
