@@ -1,0 +1,2 @@
+pytrends
+pandas
