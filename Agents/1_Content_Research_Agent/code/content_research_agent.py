@@ -1,6 +1,7 @@
 """
 Content Research Agent - Fetches Google Trends data for given topics and saves the results to files.
-This script uses pytrends to fetch Google Trends data asynchronously, validates it, and saves it as JSON files.
+This script uses pytrends to fetch Google Trends data asynchronously,
+validates it, and saves it as JSON files.
 """
 
 import asyncio
@@ -41,7 +42,7 @@ class GoogleTrendsFetcher:
     @staticmethod
     def sanitize_filename(topic: str) -> str:
         """
-        Sanitizes a topic name to create a valid filename by keeping alphanumeric characters, spaces, and underscores.
+        Sanitizes a topic name to create a valid filename.
 
         Args:
             topic (str): The topic name to sanitize.
@@ -53,7 +54,7 @@ class GoogleTrendsFetcher:
 
     async def fetch_data(self, topic: str) -> Dict[str, Any]:
         """
-        Fetches interest-over-time data for a given topic from Google Trends with retry logic.
+        Fetches interest-over-time data for a topic from Google Trends with retry logic.
 
         Args:
             topic (str): The topic to fetch data for.
@@ -73,7 +74,12 @@ class GoogleTrendsFetcher:
                 logging.warning('No data retrieved for topic: %s', topic)
                 return {}
             except RequestException as e:
-                logging.error('Request failed: %s. Attempt %d of %d.', str(e), attempt + 1, retries)
+                logging.error(
+                    'Request failed: %s. Attempt %d of %d.',
+                    str(e),
+                    attempt + 1,
+                    retries
+                )
                 await asyncio.sleep(2 ** attempt)
             except jsonschema.ValidationError as e:
                 logging.error('Data validation failed: %s', str(e))
@@ -112,7 +118,7 @@ class GoogleTrendsFetcher:
 
 async def main(topic_list: List[str]) -> None:
     """
-    Main function to fetch data for multiple topics concurrently using asyncio.
+    Main function to fetch data for multiple topics concurrently.
 
     Args:
         topic_list (List[str]): List of topics to fetch data for.
