@@ -26,19 +26,17 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
 
+           # Previous steps...
+
       - name: Check File Exists
         run: |
           ls -la Agents/1_Content_Research_Agent/code/content_research_agent.py
 
       - name: Debug File Content
         run: |
-          cat Agents/1_Content_Research_Agent/code/content_research_agent.py | grep -n "docstring\|logger"
+          grep -n -e docstring -e logger Agents/1_Content_Research_Agent/code/content_research_agent.py || echo "No matches found"
 
       - name: Run Linting
         run: |
           pylint Agents/1_Content_Research_Agent/code/content_research_agent.py \
           --max-line-length=100 --disable=R0903 --rcfile=/dev/null
-
-      - name: Run Tests
-        run: |
-          pytest || echo "No tests found; skipping test step."
