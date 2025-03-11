@@ -1,68 +1,77 @@
-#!/usr/bin/env python3
+"""
+Video Creation Agent (Alternative)
+
+Purpose: Creates videos from audio/text inputs using ffmpeg
+Input: Voiceover file path, script outline file path
+Output: Video file path
+Dependencies: ffmpeg-python, os
+"""
+
 import os
 import ffmpeg
 
-def create_video():
-    # Define paths
-    base_dir = os.path.expanduser("~")
-    voiceover_file = os.path.join(base_dir, 
-"Documents/youtube/Agents/4_Voiceover_Audio_Agent/code/voiceover.aiff")
-    script_outline_file = os.path.join(base_dir, 
-"Documents/youtube/Agents/2_Scriptwriting_Outline_Agent/code/script_outline.txt")
-    output_video = os.path.join(base_dir, 
-"Documents/youtube/Agents/5_Video_Creation_Editing_Agent/code/final_video.mp4")
-
-    # Check if required files exist
+def create_video(voiceover_file: str, script_outline_file: str) -> str:
+    """Generates video combining audio and text content.
+    
+    Args:
+        voiceover_file: Path to audio file
+        script_outline_file: Path to text script file
+        
+    Returns:
+        Path to generated video file
+        
+    Raises:
+        FileNotFoundError: If input files are missing
+        ffmpeg.Error: For video processing failures
+    """
+    output_video = "output_video_alt.mp4"
+    
     if not os.path.exists(voiceover_file):
-        print("Voiceover file not found. Please run the Voiceover/Audio Agent first.") 
-        return
+        raise FileNotFoundError(f"Voiceover file {voiceover_file} not found")
     if not os.path.exists(script_outline_file):
-        print("Script outline file not found. Please run the Scriptwriting & Outline Agent first.") 
-        return
+        raise FileNotFoundError(f"Script file {script_outline_file} not found")
 
-    # Get audio duration using ffmpeg.probe
     try:
+        # Get audio duration
         probe = ffmpeg.probe(voiceover_file)
         duration = float(probe['format']['duration'])
-    except Exception as e:
-        print("Error obtaining audio duration:", e)
-        return
-
-    # Read the script outline text and replace newlines with spaces
-    with open(script_outline_file, "r") as f:
-        text = f.read().replace('\n', ' ')
-
-    print("Audio duration:", duration)
-    print("Script text:", text)
-
-    # Create a black background video with the same duration as the audio using ffmeg's lavfi input
-    black_video = ffmpeg.input('color=c=black:s=1280x720:d={}'.format(duration), f='lavfi')
-
-    # Overlay text using the drawtext filter (adjust parameters as needed)
-    video_with_text = black_video.filter('drawtext',
-                                           text=text,
-                                           fontsize=24,
-                                           fontcolor='white',
-                                           x='(w-text_w)/2',
-                                           y='(h-text_h)/2',
-                                           box=1,
-                                           boxcolor='black@0.5',
-                                           
-enable='between(t,0,{})'.format(duration))
-
-    # Load the audio file
-    audio = ffmpeg.input(voiceover_file)
-
-    # Combine video and audio into the final output
-    try:
-        out = ffmpeg.output(video_with_text, audio, output_video,
-                            vcodec='libx264', acodec='aac', 
-pix_fmt='yuv420p', shortest=None)
-        ffmpeg.run(out, overwrite_output=True)
-        print("Final video saved to", output_video)
+        
+        # Read script text
+        with open(script_outline_file, "r", encoding="utf-8") as f:
+            text = f.read().replace('\n', ' ')
+        
+        # Create video with text overlay
+        black_video = ffmpeg.input(
+            f'color=c=black:s=1280x720:d={duration}', 
+            f='lavfi'
+        )
+        video_with_text = black_video.filter(
+            'drawtext',
+            text=text,
+            fontsize=24,
+            fontcolor='white',
+            x='(w-text_w)/2',
+            y='(h-text_h)/2',
+            box=1,
+            boxcolor='black@0.5',
+            enable=f'between(t,0,{duration})'
+        )
+        
+        # Add audio and render
+        audio = ffmpeg.input(voiceover_file)
+        ffmpeg.output(
+            video_with_text, 
+            audio, 
+            output_video, 
+            vcodec='libx264', 
+            acodec='aac'
+        ).run(overwrite_output=True)
+        
+        return output_video
+        
     except ffmpeg.Error as e:
-        print("ffmpeg error:", e.stderr.decode())
+        raise RuntimeError(f"FFmpeg error: {e.stderr.decode()}") from e
 
 if __name__ == '__main__':
-    create_video()
-
+    try:
+        result = create_video("voiceover.mp
