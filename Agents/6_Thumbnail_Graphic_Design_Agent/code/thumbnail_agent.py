@@ -45,5 +45,5 @@ def generate_thumbnail(title: str, output_path: str = "thumbnail.png") -> str:
     return output_path
 
 if __name__ == "__main__":
-    result = generate_thumbnail("AI Revolution in 2024")
+    result = generate_thumbnail("AI Revolution in 2025")
     print(f"Thumbnail saved to: {result}")
