@@ -4,3 +4,4 @@ tenacity==8.2.3
 requests==2.31.0
 pytest==8.0.2
 python-dotenv==1.0.0
+pylint==3.1.0  # ✅ Add this line
