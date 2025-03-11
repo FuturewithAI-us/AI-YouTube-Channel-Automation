@@ -74,4 +74,7 @@ def create_video(voiceover_file: str, script_outline_file: str) -> str:
 
 if __name__ == '__main__':
     try:
-        result = create_video("voiceover.mp
+        result = create_video("voiceover.mp3", "script.txt")
+        print(f"Video created: {result}")
+    except Exception as e:
+        print(f"Error: {str(e)}")
