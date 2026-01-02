@@ -8,3 +8,4 @@ pytest==8.0.2
 python-dotenv==1.0.0
 pylint==3.1.0
 tts==0.14.3  # ✅ Compatible with Python 3.8
+transformers>=5.0.0rc1 # not directly required, pinned by Snyk to avoid a vulnerability
